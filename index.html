@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5efe4">
+<title>Just Fast</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#f5efe4;--ink:#25312b;--sage:#788f7b;--sage2:#dfe7dd;--card:#fffaf2;--muted:#6f766f;--danger:#9b5b52}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+.app{max-width:520px;margin:auto;min-height:100vh;padding:calc(22px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
+header{text-align:center;margin-bottom:18px} h1{letter-spacing:.16em;font-size:20px;margin:0}.tag{color:var(--muted);font-size:13px;margin-top:6px}
+.card{background:var(--card);border-radius:28px;padding:24px;box-shadow:0 8px 30px rgba(40,50,40,.07);text-align:center}
+.ring{width:245px;height:245px;margin:10px auto 20px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--sage) 0deg,var(--sage2) 0deg)}
+.inner{width:205px;height:205px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;justify-content:center;align-items:center}
+.state{font-size:12px;letter-spacing:.16em;color:var(--sage);font-weight:700}.time{font-size:37px;font-weight:700;font-variant-numeric:tabular-nums;margin:8px 0}.goalText{font-size:14px;color:var(--muted)}
+button,select,input{font:inherit}.primary{width:100%;border:0;border-radius:18px;padding:17px;background:var(--sage);color:white;font-weight:750;font-size:17px}
+.secondary{border:0;background:var(--sage2);color:var(--ink);padding:12px 14px;border-radius:14px;font-weight:650}
+.danger{background:#f0dfdc;color:#743e37}.row{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:14px 0}
+label{font-size:13px;color:var(--muted)} select,input[type="datetime-local"]{border:1px solid #d7d6ce;background:white;border-radius:12px;padding:10px;color:var(--ink)}
+.details{font-size:14px;line-height:1.7;color:var(--muted);margin:12px 0 18px}.complete{font-weight:800;color:var(--sage);margin-top:4px}
+nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.tab{border:0;border-radius:16px;padding:13px;background:transparent;color:var(--muted);font-weight:700}.tab.active{background:var(--sage2);color:var(--ink)}
+.panel{display:none}.panel.active{display:block}.history{margin-top:12px}.item{background:var(--card);padding:15px 16px;border-radius:18px;margin:9px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}.item small{color:var(--muted);display:block;margin-top:3px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{background:var(--card);padding:15px 8px;border-radius:18px;text-align:center}.stat b{display:block;font-size:19px}.stat span{font-size:11px;color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:28px 10px}.editbox{margin-top:12px;padding:15px;background:var(--sage2);border-radius:18px;text-align:left}
+footer{text-align:center;color:var(--muted);font-size:11px;margin-top:20px}
+
+.celebrate{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9}.confetti{position:absolute;top:-20px;font-size:24px;animation:fall 2.5s linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.2}}
+.sectionTitle{font-size:13px;letter-spacing:.12em;font-weight:800;color:var(--sage);margin:20px 4px 8px}
+.manual{background:var(--card);border-radius:22px;padding:16px;margin-top:12px}.manual .row{justify-content:flex-start}.manual input{width:100%}
+.calendar{background:var(--card);border-radius:22px;padding:14px;margin-top:12px}.calHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center}.dow{font-size:10px;color:var(--muted);padding:5px}.day{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:12px}.day.fast{background:var(--sage2);font-weight:800}.day.blank{visibility:hidden}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:white;padding:12px 16px;border-radius:14px;font-size:13px;z-index:10;display:none}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>JUST FAST</h1><div class="tag">Your fasting clock. Nothing else.</div></header>
+
+<section id="home" class="panel active">
+<div class="card">
+  <div class="ring" id="ring"><div class="inner">
+    <div class="state" id="state">READY</div>
+    <div class="time" id="time">00:00:00</div>
+    <div class="goalText" id="goalText">Goal: 16 hours</div>
+    <div class="complete" id="complete"></div>
+  </div></div>
+  <div class="row">
+    <label>Fasting goal
+      <select id="goal">
+        <option>12</option><option>14</option><option selected>16</option><option>18</option><option>20</option><option>24</option>
+      </select> hours
+    </label>
+  </div>
+  <div class="details" id="details">Choose your goal, then start when your fast begins.</div>
+  <button class="primary" id="mainBtn">START FAST</button>
+  <div class="row" id="activeTools" style="display:none">
+    <button class="secondary" id="editStart">Edit start time</button>
+  </div>
+  <div class="editbox" id="editBox" style="display:none">
+    <label>Fast started
+      <input id="startInput" type="datetime-local">
+    </label>
+    <div class="row"><button class="secondary" id="saveStart">Save</button><button class="secondary" id="cancelEdit">Cancel</button></div>
+  </div>
+
+  <div class="row" style="margin-top:18px">
+    <button class="secondary" id="notifyBtn">🔔 Goal notification: Off</button>
+  </div>
+</div>
+</section>
+
+<section id="historyPanel" class="panel">
+  <div class="stats">
+    <div class="stat"><b id="countStat">0</b><span>FASTS</span></div>
+    <div class="stat"><b id="avgStat">—</b><span>AVERAGE</span></div>
+    <div class="stat"><b id="longStat">—</b><span>LONGEST</span></div>
+  </div>
+  <div class="sectionTitle">CALENDAR</div>
+  <div class="calendar">
+    <div class="calHead"><button class="secondary" id="prevMonth">‹</button><b id="calTitle"></b><button class="secondary" id="nextMonth">›</button></div>
+    <div class="calGrid" id="calendar"></div>
+  </div>
+  <div class="sectionTitle">ADD A MISSED FAST</div>
+  <div class="manual">
+    <div class="row"><label>Started<input id="manualStart" type="datetime-local"></label></div>
+    <div class="row"><label>Ended<input id="manualEnd" type="datetime-local"></label></div>
+    <button class="secondary" id="addManual">Add to history</button>
+  </div>
+  <div class="sectionTitle">FASTING HISTORY</div>
+  <div class="history" id="history"></div>
+</section>
+
+<nav>
+<button class="tab active" data-panel="home">Timer</button>
+<button class="tab" data-panel="historyPanel">History</button>
+</nav>
+<footer>Just Fast keeps it simple: a timer, your goals, and your history.</footer>
+</div>
+
+<script>
+const KEY="justFast.v1";
+let data=JSON.parse(localStorage.getItem(KEY)||'{"active":null,"history":[],"goal":16}');
+const $=id=>document.getElementById(id);
+$("goal").value=String(data.goal||16);
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function fmtDur(ms){
+  let s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+}
+function shortDur(ms){let h=ms/36e5; return h<1?Math.round(ms/60000)+"m":h.toFixed(h<10?1:0)+"h"}
+function dt(ts){return new Date(ts).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}
+function localInput(ts){let d=new Date(ts-datetimeOffset(ts)); return d.toISOString().slice(0,16)}
+function datetimeOffset(ts){return new Date(ts).getTimezoneOffset()*60000}
+
+function render(){
+ data.goal=Number($("goal").value); save();
+ const active=data.active;
+ if(active){
+   let elapsed=Date.now()-active.start, goalMs=active.goal*36e5, pct=Math.min(elapsed/goalMs,1);
+   $("ring").style.background=`conic-gradient(var(--sage) ${pct*360}deg,var(--sage2) ${pct*360}deg)`;
+   $("state").textContent=elapsed>=goalMs?"GOAL COMPLETE ✓":"FASTING";
+   $("time").textContent=fmtDur(elapsed);
+   $("goalText").textContent=`Goal: ${active.goal} hours`;
+   $("complete").textContent=elapsed>=goalMs?`${shortDur(elapsed-goalMs)} beyond your goal`:"";
+   if(elapsed>=goalMs && !celebrated){
+     celebrated=true; celebrate();
+     if(notifyOn && "Notification" in window && Notification.permission==="granted"){
+       try{new Notification("Just Fast",{body:`You reached your ${active.goal}-hour fasting goal. Nice work!`})}catch(e){}
+     }
+   }
+   $("details").innerHTML=`Started: <b>${dt(active.start)}</b><br>Goal reached: <b>${dt(active.start+goalMs)}</b>`;
+   $("mainBtn").textContent="END FAST"; $("mainBtn").classList.add("danger");
+   $("activeTools").style.display="flex"; $("goal").disabled=true;
+ } else {
+   celebrated=false;
+   $("ring").style.background="conic-gradient(var(--sage) 0deg,var(--sage2) 0deg)";
+   $("state").textContent="READY"; $("time").textContent="00:00:00";
+   $("goalText").textContent=`Goal: ${data.goal} hours`; $("complete").textContent="";
+   $("details").textContent="Choose your goal, then start when your fast begins.";
+   $("mainBtn").textContent="START FAST"; $("mainBtn").classList.remove("danger");
+   $("activeTools").style.display="none"; $("goal").disabled=false; $("editBox").style.display="none";
+ }
+ renderHistory();
+}
+$("goal").onchange=()=>{data.goal=Number($("goal").value);save();render()};
+$("mainBtn").onclick=()=>{
+ if(data.active){
+   let end=Date.now(), a=data.active;
+   data.history.unshift({start:a.start,end,duration:end-a.start,goal:a.goal});
+   data.active=null;
+ } else data.active={start:Date.now(),goal:Number($("goal").value)};
+ save();render();
+};
+$("editStart").onclick=()=>{$("startInput").value=localInput(data.active.start);$("editBox").style.display="block"};
+$("cancelEdit").onclick=()=>$("editBox").style.display="none";
+$("saveStart").onclick=()=>{
+ let v=new Date($("startInput").value).getTime();
+ if(v && v<=Date.now()){data.active.start=v;save();$("editBox").style.display="none";render()}
+ else alert("Choose a start time that is not in the future.");
+};
+function renderHistory(){
+ let h=data.history||[], el=$("history");
+ $("countStat").textContent=h.length;
+ $("avgStat").textContent=h.length?shortDur(h.reduce((a,x)=>a+x.duration,0)/h.length):"—";
+ $("longStat").textContent=h.length?shortDur(Math.max(...h.map(x=>x.duration))):"—";
+ renderCalendar();
+ if(!h.length){el.innerHTML='<div class="empty">Your completed fasts will show up here.</div>';return}
+ el.innerHTML=h.map((x,i)=>`<div class="item"><div><b>${shortDur(x.duration)}</b><small>${dt(x.start)} → ${dt(x.end)}</small></div><button class="secondary" onclick="del(${i})">Delete</button></div>`).join("");
+}
+window.del=i=>{if(confirm("Delete this fasting record?")){data.history.splice(i,1);save();render()}};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".tab,.panel").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active"); $(b.dataset.panel).classList.add("active"); renderHistory();
+});
+
+let calDate=new Date(); let celebrated=false; let notifyOn=localStorage.getItem("justFast.notify")==="1";
+
+function toast(msg){let t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",2200)}
+function celebrate(){
+ let box=$("celebrate"), chars=["✦","●","★","✓","✧"];
+ box.innerHTML="";
+ for(let i=0;i<34;i++){let s=document.createElement("span");s.className="confetti";s.textContent=chars[i%chars.length];s.style.left=(Math.random()*100)+"vw";s.style.animationDelay=(Math.random()*.8)+"s";box.appendChild(s)}
+ setTimeout(()=>box.innerHTML="",3500);
+}
+async function setNotify(){
+ if(!("Notification" in window)){toast("Notifications aren't supported in this browser.");return}
+ if(!notifyOn){
+   let p=await Notification.requestPermission();
+   if(p==="granted"){notifyOn=true;localStorage.setItem("justFast.notify","1");toast("Goal notifications are on.")}
+   else toast("Notification permission wasn't granted.");
+ } else {notifyOn=false;localStorage.setItem("justFast.notify","0");toast("Goal notifications are off.")}
+ updateNotify();
+}
+function updateNotify(){if($("notifyBtn"))$("notifyBtn").textContent=`🔔 Goal notification: ${notifyOn?"On":"Off"}`}
+$("notifyBtn").onclick=setNotify; updateNotify();
+
+function renderCalendar(){
+ let y=calDate.getFullYear(),m=calDate.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate();
+ $("calTitle").textContent=first.toLocaleString([],{month:"long",year:"numeric"});
+ let names=["S","M","T","W","T","F","S"], out=names.map(n=>`<div class="dow">${n}</div>`).join("");
+ for(let i=0;i<first.getDay();i++) out+='<div class="day blank">0</div>';
+ let fastDays=new Set((data.history||[]).filter(x=>{let d=new Date(x.start);return d.getFullYear()==y&&d.getMonth()==m}).map(x=>new Date(x.start).getDate()));
+ for(let d=1;d<=days;d++) out+=`<div class="day ${fastDays.has(d)?"fast":""}">${d}</div>`;
+ $("calendar").innerHTML=out;
+}
+$("prevMonth").onclick=()=>{calDate=new Date(calDate.getFullYear(),calDate.getMonth()-1,1);renderCalendar()};
+$("nextMonth").onclick=()=>{calDate=new Date(calDate.getFullYear(),calDate.getMonth()+1,1);renderCalendar()};
+$("addManual").onclick=()=>{
+ let s=new Date($("manualStart").value).getTime(),e=new Date($("manualEnd").value).getTime();
+ if(!s||!e||e<=s){toast("Check those start and end times.");return}
+ data.history.unshift({start:s,end:e,duration:e-s,goal:data.goal||16}); save(); $("manualStart").value="";$("manualEnd").value="";renderHistory();renderCalendar();toast("Fast added.");
+};
+
+setInterval(()=>{if(data.active)render()},1000);
+render();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+<div class="celebrate" id="celebrate"></div><div class="toast" id="toast"></div></body>
+</html>
