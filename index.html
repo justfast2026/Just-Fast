@@ -64,7 +64,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:20px}
   </div>
 
   <div class="row" style="margin-top:18px">
-    <button class="secondary" id="notifyBtn">🔔 Goal notification: Off</button>
+    <button class="secondary" id="notifyBtn">🔔 Alert while app is open: Off</button>
   </div>
 </div>
 </section>
@@ -97,6 +97,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:20px}
 <footer>Just Fast keeps it simple: a timer, your goals, and your history.</footer>
 </div>
 
+<div class="celebrate" id="celebrate"></div><div class="toast" id="toast"></div>
 <script>
 const KEY="justFast.v1";
 let data=JSON.parse(localStorage.getItem(KEY)||'{"active":null,"history":[],"goal":16}');
@@ -126,7 +127,7 @@ function render(){
    if(elapsed>=goalMs && !celebrated){
      celebrated=true; celebrate();
      if(notifyOn && "Notification" in window && Notification.permission==="granted"){
-       try{new Notification("Just Fast",{body:`You reached your ${active.goal}-hour fasting goal. Nice work!`})}catch(e){}
+       sendGoalAlert(active.goal);
      }
    }
    $("details").innerHTML=`Started: <b>${dt(active.start)}</b><br>Goal reached: <b>${dt(active.start+goalMs)}</b>`;
@@ -183,16 +184,24 @@ function celebrate(){
  for(let i=0;i<34;i++){let s=document.createElement("span");s.className="confetti";s.textContent=chars[i%chars.length];s.style.left=(Math.random()*100)+"vw";s.style.animationDelay=(Math.random()*.8)+"s";box.appendChild(s)}
  setTimeout(()=>box.innerHTML="",3500);
 }
+async function sendGoalAlert(goal){
+ const options={body:`You reached your ${goal}-hour fasting goal. Nice work!`};
+ try{
+   const registration="serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+   if(registration && registration.active) await registration.showNotification("Just Fast",options);
+   else new Notification("Just Fast",options);
+ }catch(e){toast("Your goal is complete, but the notification could not be shown.")}
+}
 async function setNotify(){
  if(!("Notification" in window)){toast("Notifications aren't supported in this browser.");return}
  if(!notifyOn){
    let p=await Notification.requestPermission();
-   if(p==="granted"){notifyOn=true;localStorage.setItem("justFast.notify","1");toast("Goal notifications are on.")}
+   if(p==="granted"){notifyOn=true;localStorage.setItem("justFast.notify","1");toast("Goal alerts are on while the app is open.")}
    else toast("Notification permission wasn't granted.");
- } else {notifyOn=false;localStorage.setItem("justFast.notify","0");toast("Goal notifications are off.")}
+ } else {notifyOn=false;localStorage.setItem("justFast.notify","0");toast("Goal alerts are off.")}
  updateNotify();
 }
-function updateNotify(){if($("notifyBtn"))$("notifyBtn").textContent=`🔔 Goal notification: ${notifyOn?"On":"Off"}`}
+function updateNotify(){if($("notifyBtn"))$("notifyBtn").textContent=`🔔 Alert while app is open: ${notifyOn && "Notification" in window && Notification.permission==="granted"?"On":"Off"}`}
 $("notifyBtn").onclick=setNotify; updateNotify();
 
 function renderCalendar(){
@@ -208,7 +217,7 @@ $("prevMonth").onclick=()=>{calDate=new Date(calDate.getFullYear(),calDate.getMo
 $("nextMonth").onclick=()=>{calDate=new Date(calDate.getFullYear(),calDate.getMonth()+1,1);renderCalendar()};
 $("addManual").onclick=()=>{
  let s=new Date($("manualStart").value).getTime(),e=new Date($("manualEnd").value).getTime();
- if(!s||!e||e<=s){toast("Check those start and end times.");return}
+ if(!Number.isFinite(s)||!Number.isFinite(e)||e<=s||e>Date.now()){toast("Choose an end after the start, with neither time in the future.");return}
  data.history.unshift({start:s,end:e,duration:e-s,goal:data.goal||16}); save(); $("manualStart").value="";$("manualEnd").value="";renderHistory();renderCalendar();toast("Fast added.");
 };
 
@@ -216,5 +225,5 @@ setInterval(()=>{if(data.active)render()},1000);
 render();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
-<div class="celebrate" id="celebrate"></div><div class="toast" id="toast"></div></body>
+</body>
 </html>
